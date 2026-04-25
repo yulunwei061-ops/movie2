@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>電影搜尋作業</title></head>
+<body>
+    <h2>電影關鍵字查詢</h2>
+    <input type="text" id="movieName" placeholder="請輸入片名...">
+    <button onclick="doSearch()">搜尋</button>
+    <div id="list"></div>
+
+    <script>
+        async function doSearch() {
+            const kw = document.getElementById('movieName').value;
+            const res = await fetch(`/api?keyword=${encodeURIComponent(kw)}`);
+            const data = await res.json();
+            let html = '';
+            data.forEach(movie => {
+                html += `<div>
+                    <h3>${movie.title}</h3>
+                    <img src="${movie.poster}" width="150"><br>
+                    <a href="${movie.link}" target="_blank">查看電影介紹</a>
+                </div><hr>`;
+            });
+            document.getElementById('list').innerHTML = html || '找不到電影';
+        }
+    </script>
+</body>
+</html>
