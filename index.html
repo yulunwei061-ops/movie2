@@ -1,27 +1,86 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>電影搜尋作業</title></head>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電影搜尋作業</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; line-height: 1.6; }
+        .search-box { margin-bottom: 30px; }
+        input { padding: 10px; width: 250px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .movie-card { display: flex; margin-bottom: 20px; border: 1px solid #eee; padding: 15px; border-radius: 8px; align-items: center; }
+        .movie-card img { border-radius: 4px; margin-right: 20px; object-fit: cover; background-color: #f0f0f0; }
+        .movie-info h3 { margin-top: 0; color: #333; }
+        #loading { display: none; color: #666; font-style: italic; }
+    </style>
+</head>
 <body>
-    <h2>電影關鍵字查詢</h2>
-    <input type="text" id="movieName" placeholder="請輸入片名...">
-    <button onclick="doSearch()">搜尋</button>
+    <h2>🎬 電影關鍵字查詢</h2>
+    
+    <div class="search-box">
+        <input type="text" id="movieName" placeholder="請輸入片名關鍵字 (如：蜘蛛人)">
+        <button onclick="doSearch()">立即搜尋</button>
+        <p id="loading">正在努力爬取資料中，請稍候...</p>
+    </div>
+
     <div id="list"></div>
 
     <script>
         async function doSearch() {
             const kw = document.getElementById('movieName').value;
-            const res = await fetch(`/api?keyword=${encodeURIComponent(kw)}`);
-            const data = await res.json();
-            let html = '';
-            data.forEach(movie => {
-                html += `<div>
-                    <h3>${movie.title}</h3>
-                    <img src="${movie.poster}" width="150"><br>
-                    <a href="${movie.link}" target="_blank">查看電影介紹</a>
-                </div><hr>`;
-            });
-            document.getElementById('list').innerHTML = html || '找不到電影';
+            const listDiv = document.getElementById('list');
+            const loading = document.getElementById('loading');
+
+            if (!kw) {
+                alert("請輸入關鍵字！");
+                return;
+            }
+
+            // 顯示載入狀態，清空舊結果
+            loading.style.display = 'block';
+            listDiv.innerHTML = '';
+
+            try {
+                // 呼叫你的 Vercel Python API
+                const res = await fetch(`/api?keyword=${encodeURIComponent(kw)}`);
+                
+                if (!res.ok) throw new Error('API 反應異常');
+                
+                const data = await res.json();
+                
+                let html = '';
+                if (data.length === 0) {
+                    html = '<p>找不到相關電影，請嘗試換個關鍵字（例如：蜘蛛人）。</p>';
+                } else {
+                    data.forEach(movie => {
+                        // 處理可能缺失的海報圖片
+                        const posterImg = movie.poster || 'https://via.placeholder.com/150x220?text=No+Image';
+                        
+                        html += `
+                            <div class="movie-card">
+                                <img src="${posterImg}" width="120" height="180" alt="${movie.title}">
+                                <div class="movie-info">
+                                    <h3>${movie.title}</h3>
+                                    <a href="${movie.link}" target="_blank" style="color: #007bff; text-decoration: none;">➡️ 查看電影詳細介紹</a>
+                                </div>
+                            </div>`;
+                    });
+                }
+                listDiv.innerHTML = html;
+            } catch (error) {
+                console.error(error);
+                listDiv.innerHTML = `<p style="color: red;">搜尋失敗：可能被目標網站阻擋或伺服器錯誤。</p>`;
+            } finally {
+                loading.style.display = 'none';
+            }
         }
+
+        // 支援按下 Enter 鍵搜尋
+        document.getElementById('movieName').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') doSearch();
+        });
     </script>
 </body>
 </html>
